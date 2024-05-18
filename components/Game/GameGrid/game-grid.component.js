@@ -1,5 +1,6 @@
-import { getGoogleCoords, getGridSizeSettings, setGridSize } from '../../data.js';
+import { getGoogleCoords, getGridSizeSettings, getPlayer1Coords, getPlayer2Coords } from '../../../data.js';
 import { Google } from './Google/google.component.js';
+import { Player } from './Player/player.component.js';
 
 export function GameGrid() {
   const gridElement = document.createElement('table');
@@ -14,6 +15,14 @@ export function GameGrid() {
 
       if (x === getGoogleCoords().x && y === getGoogleCoords().y) {
         cell.append(Google());
+      }
+
+      if (x === getPlayer1Coords().x && y === getPlayer1Coords().y) {
+        cell.append(Player(1));
+      }
+
+      if (x === getPlayer2Coords().x && y === getPlayer2Coords().y) {
+        cell.append(Player(2));
       }
 
       row.append(cell);

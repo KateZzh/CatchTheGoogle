@@ -5,6 +5,13 @@ export const GAME_STATES = {
   LOSE: 'lose',
 };
 
+export const MOVING_DIRECTION = {
+  UP: 'up',
+  DOWN: 'down',
+  LEFT: 'left',
+  RIGHT: 'right',
+};
+
 const _data = {
   gameState: GAME_STATES.SETTINGS,
   settings: {
@@ -13,26 +20,39 @@ const _data = {
       y: 4,
     },
     pointsToWin: 5,
-    pointsToLose: 5,
+    pointsToLose: 20,
+    googleJumpInterval: 4000,
   },
-  catch: 0,
+  catch: {
+    player1: 0,
+    player2: 0,
+  },
   miss: 0,
   time: new Date(),
   heroes: {
-    google: {
-      x: 0,
-      y: 0,
-    },
+    google: { x: 0, y: 0 },
     player1: { x: 1, y: 1 },
     player2: { x: 2, y: 2 },
   },
 };
 
-let observer = () => {};
+let _observer = () => {};
 
-function changeGoogleCoords() {
-  _data.heroes.google.x = getRandomInt(_data.settings.gridSize.x - 1);
-  _data.heroes.google.y = getRandomInt(_data.settings.gridSize.y - 1);
+function _changeGoogleCoords() {
+  let newX;
+  let newY;
+
+  do {
+    newX = _getRandomInt(_data.settings.gridSize.x - 1);
+    newY = _getRandomInt(_data.settings.gridSize.y - 1);
+  } while (
+    (newX === _data.heroes.player1.x && newY === _data.heroes.player1.y) ||
+    (newX === _data.heroes.player2.x && newY === _data.heroes.player2.y) ||
+    (_data.heroes.google.x === newX && _data.heroes.google.y === newY)
+  );
+
+  _data.heroes.google.x = newX;
+  _data.heroes.google.y = newY;
 }
 
 /**
@@ -40,33 +60,70 @@ function changeGoogleCoords() {
  * @param max любое целое положительное число (которое будет генерировать значение от 0(включая) до этого числа)
  * @returns
  */
-function getRandomInt(max) {
+function _getRandomInt(max) {
   return Math.floor(Math.random() * (max + 1));
 }
 
-let jumpIntervalId;
+let _jumpIntervalId;
 
-function stopGoogleJump() {
-  clearInterval(jumpIntervalId);
+function _stopGoogleJump() {
+  clearInterval(_jumpIntervalId);
 }
 
-function runGoogleJump() {
-  jumpIntervalId = setInterval(() => {
-    changeGoogleCoords();
+function _runGoogleJump() {
+  _jumpIntervalId = setInterval(() => {
+    _changeGoogleCoords();
     _data.miss++;
 
     if (_data.miss === _data.settings.pointsToLose) {
-      stopGoogleJump();
+      _stopGoogleJump();
       _data.gameState = GAME_STATES.LOSE;
+      _changeGoogleCoords();
     }
 
-    observer();
-  }, 3000);
+    _observer();
+  }, _data.settings.googleJumpInterval);
+}
+
+function _catchGoogle(playNumber) {
+  _stopGoogleJump();
+
+  _data.catch[`player${playNumber}`]++;
+
+  if (_data.catch[`player${playNumber}`] === _data.settings.pointsToWin) {
+    _data.gameState = GAME_STATES.WIN;
+    _changeGoogleCoords();
+  } else {
+    _changeGoogleCoords();
+    _runGoogleJump();
+  }
+
+  _observer();
+}
+
+function _checkIsCoordInValidRange(coords) {
+  const xIsCorrect = coords.x >= 0 && coords.x < _data.settings.gridSize.x;
+  const yIsCorrect = coords.y >= 0 && coords.y < _data.settings.gridSize.y;
+
+  return xIsCorrect && yIsCorrect;
+}
+
+function _coordsMatchWithAnotherPlayer(coords) {
+  const player1IsInThisCell = coords.x === _data.heroes.player1.x && coords.y === _data.heroes.player1.y;
+  const player2IsInThisCell = coords.x === _data.heroes.player2.x && coords.y === _data.heroes.player2.y;
+
+  return player1IsInThisCell || player2IsInThisCell;
+}
+
+function _coordsMatchWithGoogle(coords) {
+  const googleIsInThisCell = coords.x === _data.heroes.google.x && coords.y === _data.heroes.google.y;
+
+  return googleIsInThisCell;
 }
 
 // setter / mutation / command
 export function addEventListener(subscriber) {
-  observer = subscriber;
+  _observer = subscriber;
 }
 
 export function setGridSize(x, y) {
@@ -83,38 +140,64 @@ export function start() {
   }
 
   _data.gameState = GAME_STATES.IN_PROGRESS;
-  runGoogleJump();
-  observer();
+  _runGoogleJump();
+  _observer();
 }
 
 export function playAgain() {
   _data.miss = 0;
-  _data.catch = 0;
+  _data.catch.player1 = 0;
+  _data.catch.player2 = 0;
 
   _data.gameState = GAME_STATES.SETTINGS;
-  observer();
-}
-
-export function catchGoogle() {
-  stopGoogleJump();
-
-  if (_data.catch === _data.settings.pointsToWin) {
-    return;
-  }
-
-  _data.catch++;
-
-  if (_data.catch === _data.settings.pointsToWin) {
-    _data.gameState = GAME_STATES.WIN;
-  } else {
-    changeGoogleCoords();
-    runGoogleJump();
-  }
-
-  observer();
+  _observer();
 }
 
 // getter / selector / query / adapter
+
+export function movePlayer(playerNumber, direction) {
+  validatePlayerNumberOrThrow(playerNumber);
+
+  if (_data.gameState !== GAME_STATES.IN_PROGRESS) {
+    return;
+  }
+
+  const newCoords = { ..._data.heroes[`player${playerNumber}`] };
+
+  switch (direction) {
+    case MOVING_DIRECTION.LEFT: {
+      newCoords.x--;
+      break;
+    }
+    case MOVING_DIRECTION.RIGHT: {
+      newCoords.x++;
+      break;
+    }
+    case MOVING_DIRECTION.UP: {
+      newCoords.y--;
+      break;
+    }
+    case MOVING_DIRECTION.DOWN: {
+      newCoords.y++;
+      break;
+    }
+  }
+
+  const isValid = _checkIsCoordInValidRange(newCoords);
+  if (!isValid) return;
+
+  const isMatchWithAnotherPlayer = _coordsMatchWithAnotherPlayer(newCoords);
+  if (isMatchWithAnotherPlayer) return;
+
+  const isMatchWithGoogle = _coordsMatchWithGoogle(newCoords);
+  if (isMatchWithGoogle) {
+    _catchGoogle(playerNumber);
+  }
+
+  _data.heroes[`player${playerNumber}`] = newCoords;
+
+  _observer();
+}
 
 /**
  *
@@ -132,10 +215,24 @@ export function getGoogleCoords() {
   return { ..._data.heroes.google };
 }
 
+export function getPlayer1Coords() {
+  return { ..._data.heroes.player1 };
+}
+
+export function getPlayer2Coords() {
+  return { ..._data.heroes.player2 };
+}
+
 export function getGridSizeSettings() {
   return { ..._data.settings.gridSize };
 }
 
 export function getGameState() {
   return _data.gameState;
+}
+
+export function validatePlayerNumberOrThrow(playerNumber) {
+  if (![1, 2].some((number) => number === playerNumber)) {
+    throw new Error('Incorrect player number');
+  }
 }

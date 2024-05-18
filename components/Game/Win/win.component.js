@@ -1,9 +1,9 @@
-import { playAgain } from "../../data.js";
+import { playAgain } from "../../../data.js";
 
-export function Lose() {
+export function Win() {
   const element = document.createElement('div');
 
-  element.append('You lose!');
+  element.append('You win!');
 
   const playAgainButton = document.createElement('button');
   playAgainButton.append('Play Again');
