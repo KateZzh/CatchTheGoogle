@@ -1,3 +1,11 @@
+export const EVENTS = {
+  GOOGLE_JUMPED: 'GOOGLE_JUMPED',
+  PLAYER1_MOVED: 'PLAYER1_MOVED',
+  PLAYER2_MOVED: 'PLAYER2_MOVED',
+  STATUS_CHANGED: 'STATUS_CHANGED',
+  SCORES_CHANGED: 'SCORES_CHANGED',
+};
+
 export const GAME_STATES = {
   SETTINGS: 'settings',
   IN_PROGRESS: 'in_progress',
@@ -20,7 +28,7 @@ const _data = {
       y: 4,
     },
     pointsToWin: 5,
-    pointsToLose: 20,
+    pointsToLose: 5,
     googleJumpInterval: 4000,
   },
   catch: {
@@ -36,7 +44,18 @@ const _data = {
   },
 };
 
-let _observer = () => {};
+let _subscribers = [];
+
+function _notify(eventName) {
+  _subscribers.forEach((s) => {
+    try {
+      const event = { name: eventName };
+      s(event);
+    } catch (error) {
+      console.error(error);
+    }
+  });
+}
 
 function _changeGoogleCoords() {
   let newX;
@@ -73,15 +92,19 @@ function _stopGoogleJump() {
 function _runGoogleJump() {
   _jumpIntervalId = setInterval(() => {
     _changeGoogleCoords();
+    _notify(EVENTS.GOOGLE_JUMPED);
+
     _data.miss++;
+    _notify(EVENTS.SCORES_CHANGED);
 
     if (_data.miss === _data.settings.pointsToLose) {
       _stopGoogleJump();
       _data.gameState = GAME_STATES.LOSE;
-      _changeGoogleCoords();
-    }
+      _notify(EVENTS.STATUS_CHANGED);
 
-    _observer();
+      _changeGoogleCoords();
+      _notify(EVENTS.GOOGLE_JUMPED);
+    }
   }, _data.settings.googleJumpInterval);
 }
 
@@ -89,16 +112,17 @@ function _catchGoogle(playNumber) {
   _stopGoogleJump();
 
   _data.catch[`player${playNumber}`]++;
+  _notify(EVENTS.SCORES_CHANGED);
 
   if (_data.catch[`player${playNumber}`] === _data.settings.pointsToWin) {
     _data.gameState = GAME_STATES.WIN;
     _changeGoogleCoords();
+    _notify(EVENTS.STATUS_CHANGED);
   } else {
     _changeGoogleCoords();
+    _notify(EVENTS.GOOGLE_JUMPED);
     _runGoogleJump();
   }
-
-  _observer();
 }
 
 function _checkIsCoordInValidRange(coords) {
@@ -122,8 +146,13 @@ function _coordsMatchWithGoogle(coords) {
 }
 
 // setter / mutation / command
-export function addEventListener(subscriber) {
-  _observer = subscriber;
+
+export function subscribe(subscriber) {
+  _subscribers.push(subscriber);
+}
+
+export function unsubscribe(subscriber) {
+  _subscribers = _subscribers.filter((s) => s !== subscriber);
 }
 
 export function setGridSize(x, y) {
@@ -140,17 +169,18 @@ export function start() {
   }
 
   _data.gameState = GAME_STATES.IN_PROGRESS;
+  _notify(EVENTS.STATUS_CHANGED);
   _runGoogleJump();
-  _observer();
 }
 
 export function playAgain() {
   _data.miss = 0;
   _data.catch.player1 = 0;
   _data.catch.player2 = 0;
+  _notify(EVENTS.SCORES_CHANGED);
 
   _data.gameState = GAME_STATES.SETTINGS;
-  _observer();
+  _notify(EVENTS.STATUS_CHANGED);
 }
 
 // getter / selector / query / adapter
@@ -196,7 +226,7 @@ export function movePlayer(playerNumber, direction) {
 
   _data.heroes[`player${playerNumber}`] = newCoords;
 
-  _observer();
+  _notify(EVENTS[`PLAYER${playerNumber}_MOVED`]);
 }
 
 /**
