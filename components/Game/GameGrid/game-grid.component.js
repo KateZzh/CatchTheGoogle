@@ -1,10 +1,10 @@
-import { getGridSizeSettings } from '../../../data.js';
+import { getGridSizeSettings } from '../../../data.proxy.js';
 import { Cell } from './Cell/cell.component.js';
 
-export function GameGrid() {
+export async function GameGrid() {
   const gridElement = document.createElement('table');
 
-  const gridSize = getGridSizeSettings();
+  const gridSize = await getGridSizeSettings();
 
   for (let y = 0; y < gridSize.y; y++) {
     const row = document.createElement('tr');

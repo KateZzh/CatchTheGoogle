@@ -1,4 +1,4 @@
-import { start } from '../../../data.js';
+import { start } from '../../../data.proxy.js';
 
 export function Settings() {
   const element = document.createElement('div');

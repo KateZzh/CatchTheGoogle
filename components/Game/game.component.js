@@ -1,4 +1,4 @@
-import { GAME_STATES, MOVING_DIRECTION, getGameState, movePlayer } from '../../data.js';
+import { GAME_STATES, MOVING_DIRECTION, getGameState, movePlayer } from '../../data.proxy.js';
 import { Win } from './Win/win.component.js';
 import { Lose } from './Lose/lose.component.js';
 import { ResultPanel } from './ResultPanel/result-panel.component.js';
@@ -75,14 +75,17 @@ document.addEventListener('keyup', (event) => {
 //   console.log('Speech recognition ended');
 // };
 
-export function Game() {
+export async function Game() {
   const element = document.createElement('div');
 
-  const gameState = getGameState();
+  const gameState = await getGameState();
 
   switch (gameState) {
     case GAME_STATES.IN_PROGRESS:
-      element.append(ResultPanel(), GameGrid());
+      const resultPanelWrapper = ResultPanel();
+      const gameGrid = await GameGrid();
+
+      element.append(resultPanelWrapper.element, gameGrid);
       break;
     case GAME_STATES.SETTINGS:
       element.append(Settings());
@@ -98,5 +101,5 @@ export function Game() {
     }
   }
 
-  return element;
+  return { element, cleanup: () => {} };
 }

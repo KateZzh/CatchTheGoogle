@@ -28,8 +28,8 @@ const _data = {
       y: 4,
     },
     pointsToWin: 5,
-    pointsToLose: 5,
-    googleJumpInterval: 4000,
+    pointsToLose: 10,
+    googleJumpInterval: 3000,
   },
   catch: {
     player1: 0,

@@ -1,4 +1,4 @@
-import { validatePlayerNumberOrThrow } from '../../../../../data.js';
+import { validatePlayerNumberOrThrow } from '../../../../../data.proxy.js';
 
 export function Player(playerNumber) {
   const element = document.createElement('img');

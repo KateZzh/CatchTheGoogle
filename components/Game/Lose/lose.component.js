@@ -1,4 +1,4 @@
-import { playAgain } from "../../../data.js";
+import { playAgain } from '../../../data.proxy.js';
 
 export function Lose() {
   const element = document.createElement('div');

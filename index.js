@@ -1,16 +1,16 @@
-import { EVENTS, subscribe } from './data.js';
+import { EVENTS, subscribe } from './data.proxy.js';
 import { Game } from './components/Game/game.component.js';
 
-export function rerender(e) {
+export async function rerender(e) {
   if (e.name === EVENTS.STATUS_CHANGED) {
     console.log('RERENDER');
     const rootElement = document.getElementById('root');
 
     rootElement.innerHTML = '';
 
-    const game = Game();
+    const gameWrapper = await Game();
 
-    rootElement.append(game);
+    rootElement.append(gameWrapper.element);
   }
 }
 

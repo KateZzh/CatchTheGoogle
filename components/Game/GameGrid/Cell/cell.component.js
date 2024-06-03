@@ -1,4 +1,4 @@
-import { EVENTS, getGoogleCoords, getPlayer1Coords, getPlayer2Coords, subscribe } from '../../../../data.js';
+import { EVENTS, getGoogleCoords, getPlayer1Coords, getPlayer2Coords, subscribe } from '../../../../data.proxy.js';
 import { Google } from './Google/google.component.js';
 import { Player } from './Player/player.component.js';
 
@@ -14,18 +14,22 @@ export function Cell(x, y) {
     prevStatus: CELL_STATUS.EMPTY,
   };
 
-  function render() {
+  async function render() {
+    const googleCoords = await getGoogleCoords();
+    const player1Coords = await getPlayer1Coords();
+    const player2Coords = await getPlayer2Coords();
+    // Promise.all
+    
+    cell.innerHTML = '';
     console.log(x, y);
 
-    cell.innerHTML = '';
-
-    if (x === getGoogleCoords().x && y === getGoogleCoords().y) {
+    if (x === googleCoords.x && y === googleCoords.y) {
       cell.append(Google());
       state.prevStatus = CELL_STATUS.GOOGLE;
-    } else if (x === getPlayer1Coords().x && y === getPlayer1Coords().y) {
+    } else if (x === player1Coords.x && y === player1Coords.y) {
       cell.append(Player(1));
       state.prevStatus = CELL_STATUS.PLAYER1;
-    } else if (x === getPlayer2Coords().x && y === getPlayer2Coords().y) {
+    } else if (x === player2Coords.x && y === player2Coords.y) {
       cell.append(Player(2));
       state.prevStatus = CELL_STATUS.PLAYER2;
     } else {
@@ -33,12 +37,16 @@ export function Cell(x, y) {
     }
   }
 
-  subscribe((e) => {
+  subscribe(async (e) => {
+    const googleCoords = await getGoogleCoords();
+    const player1Coords = await getPlayer1Coords();
+    const player2Coords = await getPlayer2Coords();
+    
     const transition = {
       [EVENTS.GOOGLE_JUMPED]: {
         [CELL_STATUS.GOOGLE]: render,
         [CELL_STATUS.EMPTY]: () => {
-          if (x === getGoogleCoords().x && y === getGoogleCoords().y) {
+          if (x === googleCoords.x && y === googleCoords.y) {
             render();
           }
         },
@@ -46,12 +54,12 @@ export function Cell(x, y) {
       [EVENTS.PLAYER1_MOVED]: {
         [CELL_STATUS.PLAYER1]: render,
         [CELL_STATUS.GOOGLE]: () => {
-          if (x === getPlayer1Coords().x && y === getPlayer1Coords().y) {
+          if (x === player1Coords.x && y === player1Coords.y) {
             render();
           }
         },
         [CELL_STATUS.EMPTY]: () => {
-          if (x === getPlayer1Coords().x && y === getPlayer1Coords().y) {
+          if (x === player1Coords.x && y === player1Coords.y) {
             render();
           }
         },
@@ -59,12 +67,12 @@ export function Cell(x, y) {
       [EVENTS.PLAYER2_MOVED]: {
         [CELL_STATUS.PLAYER2]: render,
         [CELL_STATUS.GOOGLE]: () => {
-          if (x === getPlayer2Coords().x && y === getPlayer2Coords().y) {
+          if (x === player2Coords.x && y === player2Coords.y) {
             render();
           }
         },
         [CELL_STATUS.EMPTY]: () => {
-          if (x === getPlayer2Coords().x && y === getPlayer2Coords().y) {
+          if (x === player2Coords.x && y === player2Coords.y) {
             render();
           }
         },
